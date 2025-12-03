@@ -80,6 +80,15 @@ export const authAPI = {
     return response.data;
   },
 
+  // Update preferences
+  updatePreferences: async (preferences) => {
+    const response = await api.put('/auth/updatepreferences', preferences);
+    if (response.data.data) {
+      localStorage.setItem('user', JSON.stringify(response.data.data));
+    }
+    return response.data;
+  },
+
   // Logout
   logout: async () => {
     try {

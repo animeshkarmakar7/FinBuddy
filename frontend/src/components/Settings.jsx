@@ -1,4 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useAuth } from '../context/AuthContext';
+import { usePreferences } from '../context/PreferencesContext';
+import { authAPI } from '../services/api';
 import {
   Settings as SettingsIcon,
   User,
@@ -7,12 +10,10 @@ import {
   Palette,
   Link,
   Database,
-  HelpCircle,
   ChevronRight,
   Mail,
   Smartphone,
   Lock,
-  Eye,
   Globe,
   Moon,
   Sun,
@@ -22,15 +23,17 @@ import {
   Trash2,
   LogOut,
   CheckCircle,
-  XCircle,
   AlertCircle,
   CreditCard,
   Key,
   Fingerprint,
-  QrCode
+  Eye,
 } from 'lucide-react';
 
 const Settings = () => {
+  const { user, logout } = useAuth();
+  const { updatePreferences: updateGlobalPreferences } = usePreferences();
+  
   const [notifications, setNotifications] = useState({
     email: true,
     push: true,
@@ -47,6 +50,68 @@ const Settings = () => {
   const [theme, setTheme] = useState('light');
   const [language, setLanguage] = useState('english');
   const [currency, setCurrency] = useState('usd');
+  const [success, setSuccess] = useState('');
+  const [error, setError] = useState('');
+
+  // Load user preferences on mount
+  useEffect(() => {
+    if (user?.preferences) {
+      if (user.preferences.notifications) {
+        setNotifications(user.preferences.notifications);
+      }
+      if (user.preferences.privacy) {
+        setPrivacy(user.preferences.privacy);
+      }
+      if (user.preferences.appearance) {
+        setTheme(user.preferences.appearance.theme || 'light');
+        setLanguage(user.preferences.appearance.language || 'english');
+        setCurrency(user.preferences.appearance.currency || 'usd');
+      }
+    }
+  }, [user]);
+
+  const handleLogout = () => {
+    if (window.confirm('Are you sure you want to sign out?')) {
+      logout();
+    }
+  };
+
+  const savePreferences = async (type, data) => {
+    try {
+      setError('');
+      await authAPI.updatePreferences({ [type]: data });
+      setSuccess('Settings saved successfully!');
+      setTimeout(() => setSuccess(''), 3000);
+    } catch (err) {
+      setError('Failed to save settings');
+      console.error('Error saving preferences:', err);
+    }
+  };
+
+  const toggleNotification = async (key) => {
+    const newNotifications = { ...notifications, [key]: !notifications[key] };
+    setNotifications(newNotifications);
+    await savePreferences('notifications', newNotifications);
+  };
+
+  const togglePrivacy = async (key) => {
+    const newPrivacy = { ...privacy, [key]: !privacy[key] };
+    setPrivacy(newPrivacy);
+    await savePreferences('privacy', newPrivacy);
+  };
+
+  const updateAppearance = async (field, value) => {
+    const newAppearance = { theme, language, currency, [field]: value };
+    if (field === 'theme') setTheme(value);
+    if (field === 'language') setLanguage(value);
+    if (field === 'currency') setCurrency(value);
+    
+    // Update global preferences context immediately for instant UI update
+    updateGlobalPreferences({ [field]: value });
+    
+    // Save to database
+    await savePreferences('appearance', newAppearance);
+  };
 
   // Settings sections
   const settingsSections = [
@@ -93,7 +158,7 @@ const Settings = () => {
     {
       id: 1,
       name: 'Google',
-      email: 'john.doe@gmail.com',
+      email: user?.email || 'Not connected',
       connected: true,
       icon: Mail
     },
@@ -101,25 +166,17 @@ const Settings = () => {
       id: 2,
       name: 'Bank of America',
       account: '****4532',
-      connected: true,
+      connected: false,
       icon: CreditCard
     },
     {
       id: 3,
       name: 'PayPal',
-      email: 'john@example.com',
+      email: 'Not connected',
       connected: false,
       icon: Smartphone
     }
   ];
-
-  const toggleNotification = (key) => {
-    setNotifications(prev => ({ ...prev, [key]: !prev[key] }));
-  };
-
-  const togglePrivacy = (key) => {
-    setPrivacy(prev => ({ ...prev, [key]: !prev[key] }));
-  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-violet-50">
@@ -132,6 +189,20 @@ const Settings = () => {
             </h1>
             <p className="text-violet-600/70">Manage your preferences and account settings</p>
           </div>
+
+          {/* Success/Error Messages */}
+          {success && (
+            <div className="mb-6 p-4 bg-emerald-100 border border-emerald-300 rounded-xl text-emerald-700 flex items-center gap-2">
+              <CheckCircle className="w-5 h-5" />
+              {success}
+            </div>
+          )}
+          {error && (
+            <div className="mb-6 p-4 bg-rose-100 border border-rose-300 rounded-xl text-rose-700 flex items-center gap-2">
+              <AlertCircle className="w-5 h-5" />
+              {error}
+            </div>
+          )}
 
           {/* Quick Settings Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
@@ -179,7 +250,7 @@ const Settings = () => {
                   </div>
                   <div>
                     <p className="font-semibold text-violet-800">Email Address</p>
-                    <p className="text-sm text-violet-600/70">john.doe@example.com</p>
+                    <p className="text-sm text-violet-600/70">{user?.email || 'Not provided'}</p>
                   </div>
                 </div>
                 <button className="text-violet-600 hover:text-violet-700 font-medium text-sm">
@@ -194,7 +265,7 @@ const Settings = () => {
                   </div>
                   <div>
                     <p className="font-semibold text-violet-800">Password</p>
-                    <p className="text-sm text-violet-600/70">Last changed 3 months ago</p>
+                    <p className="text-sm text-violet-600/70">Secure your account</p>
                   </div>
                 </div>
                 <button className="text-violet-600 hover:text-violet-700 font-medium text-sm">
@@ -209,7 +280,7 @@ const Settings = () => {
                   </div>
                   <div>
                     <p className="font-semibold text-violet-800">Phone Number</p>
-                    <p className="text-sm text-violet-600/70">+1 (555) 123-4567</p>
+                    <p className="text-sm text-violet-600/70">{user?.phone || 'Not provided'}</p>
                   </div>
                 </div>
                 <button className="text-violet-600 hover:text-violet-700 font-medium text-sm">
@@ -345,10 +416,7 @@ const Settings = () => {
                     <Key className="w-5 h-5 text-violet-600" />
                     <div>
                       <p className="font-semibold text-violet-800">Two-Factor Authentication</p>
-                      <p className="text-xs text-emerald-600 flex items-center gap-1">
-                        <CheckCircle className="w-3 h-3" />
-                        Enabled
-                      </p>
+                      <p className="text-xs text-violet-600/70">Add extra security</p>
                     </div>
                   </div>
                   <ChevronRight className="w-5 h-5 text-violet-600" />
@@ -430,7 +498,7 @@ const Settings = () => {
                   <label className="block text-sm font-semibold text-violet-800 mb-3">Theme</label>
                   <div className="grid grid-cols-3 gap-3">
                     <button
-                      onClick={() => setTheme('light')}
+                      onClick={() => updateAppearance('theme', 'light')}
                       className={`p-4 rounded-xl border-2 transition-all ${
                         theme === 'light'
                           ? 'border-violet-500 bg-violet-50'
@@ -441,7 +509,7 @@ const Settings = () => {
                       <p className="text-xs font-medium text-violet-800">Light</p>
                     </button>
                     <button
-                      onClick={() => setTheme('dark')}
+                      onClick={() => updateAppearance('theme', 'dark')}
                       className={`p-4 rounded-xl border-2 transition-all ${
                         theme === 'dark'
                           ? 'border-violet-500 bg-violet-50'
@@ -452,7 +520,7 @@ const Settings = () => {
                       <p className="text-xs font-medium text-violet-800">Dark</p>
                     </button>
                     <button
-                      onClick={() => setTheme('auto')}
+                      onClick={() => updateAppearance('theme', 'auto')}
                       className={`p-4 rounded-xl border-2 transition-all ${
                         theme === 'auto'
                           ? 'border-violet-500 bg-violet-50'
@@ -469,7 +537,7 @@ const Settings = () => {
                   <label className="block text-sm font-semibold text-violet-800 mb-3">Currency</label>
                   <select
                     value={currency}
-                    onChange={(e) => setCurrency(e.target.value)}
+                    onChange={(e) => updateAppearance('currency', e.target.value)}
                     className="w-full p-3 bg-violet-50 border border-violet-200 rounded-xl text-violet-800 focus:outline-none focus:ring-2 focus:ring-violet-500"
                   >
                     <option value="usd">USD - US Dollar ($)</option>
@@ -570,7 +638,10 @@ const Settings = () => {
                   These actions are irreversible. Please proceed with caution.
                 </p>
                 <div className="flex gap-3">
-                  <button className="px-6 py-2 bg-rose-600 text-white rounded-lg hover:bg-rose-700 transition-colors font-medium">
+                  <button 
+                    onClick={handleLogout}
+                    className="px-6 py-2 bg-rose-600 text-white rounded-lg hover:bg-rose-700 transition-colors font-medium"
+                  >
                     <LogOut className="w-4 h-4 inline mr-2" />
                     Sign Out
                   </button>
@@ -586,28 +657,6 @@ const Settings = () => {
 
       {/* Animations */}
       <style jsx>{`
-        @keyframes fade-in {
-          from {
-            opacity: 0;
-            transform: translateY(-10px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-
-        @keyframes slide-up {
-          from {
-            opacity: 0;
-            transform: translateY(30px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-
         @keyframes fadeIn {
           from {
             opacity: 0;
@@ -620,11 +669,22 @@ const Settings = () => {
         }
 
         .animate-fade-in {
-          animation: fade-in 0.6s ease-out;
+          animation: fadeIn 0.6s ease-out;
         }
 
         .animate-slide-up {
-          animation: slide-up 0.6s ease-out forwards;
+          animation: slideUp 0.6s ease-out forwards;
+        }
+
+        @keyframes slideUp {
+          from {
+            opacity: 0;
+            transform: translateY(30px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
         }
       `}</style>
     </div>

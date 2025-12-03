@@ -54,6 +54,24 @@ const userSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    preferences: {
+      notifications: {
+        email: { type: Boolean, default: true },
+        push: { type: Boolean, default: true },
+        sms: { type: Boolean, default: false },
+        marketing: { type: Boolean, default: false },
+      },
+      privacy: {
+        profileVisibility: { type: String, default: 'public' },
+        activityStatus: { type: Boolean, default: true },
+        dataSharing: { type: Boolean, default: false },
+      },
+      appearance: {
+        theme: { type: String, default: 'light' },
+        language: { type: String, default: 'english' },
+        currency: { type: String, default: 'usd' },
+      },
+    },
     resetPasswordToken: String,
     resetPasswordExpire: Date,
     lastLogin: {

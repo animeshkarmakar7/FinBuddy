@@ -182,6 +182,40 @@ export const updatePassword = async (req, res) => {
   }
 };
 
+// @desc    Update user preferences
+// @route   PUT /api/auth/updatepreferences
+// @access  Private
+export const updatePreferences = async (req, res) => {
+  try {
+    const { notifications, privacy, appearance } = req.body;
+
+    const updateData = {};
+    if (notifications) updateData['preferences.notifications'] = notifications;
+    if (privacy) updateData['preferences.privacy'] = privacy;
+    if (appearance) updateData['preferences.appearance'] = appearance;
+
+    const user = await User.findByIdAndUpdate(
+      req.user.id,
+      { $set: updateData },
+      {
+        new: true,
+        runValidators: true,
+      }
+    );
+
+    res.status(200).json({
+      success: true,
+      data: user,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Error updating preferences',
+      error: error.message,
+    });
+  }
+};
+
 // @desc    Logout user / clear cookie
 // @route   GET /api/auth/logout
 // @access  Private

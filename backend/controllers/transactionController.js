@@ -206,20 +206,37 @@ export const getTransactionStats = async (req, res) => {
       stats.byCategory[transaction.category].total += amount;
       stats.byCategory[transaction.category].count += 1;
 
-      // Group by month
-      const monthKey = new Date(transaction.date).toLocaleDateString('en-US', {
+      // Group by month with actual date for sorting
+      const date = new Date(transaction.date);
+      const monthKey = date.toLocaleDateString('en-US', {
         year: 'numeric',
         month: 'short',
       });
-      if (!stats.byMonth[monthKey]) {
-        stats.byMonth[monthKey] = {
+      const sortKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`; // YYYY-MM for sorting
+      
+      if (!stats.byMonth[sortKey]) {
+        stats.byMonth[sortKey] = {
+          month: monthKey,
           income: 0,
           expense: 0,
           investment: 0,
+          date: new Date(date.getFullYear(), date.getMonth(), 1), // First day of month for sorting
         };
       }
-      stats.byMonth[monthKey][transaction.type] += amount;
+      stats.byMonth[sortKey][transaction.type] += amount;
     });
+
+    // Convert byMonth object to sorted array
+    stats.byMonth = Object.values(stats.byMonth)
+      .sort((a, b) => a.date - b.date) // Sort chronologically
+      .reduce((acc, item) => {
+        acc[item.month] = {
+          income: item.income,
+          expense: item.expense,
+          investment: item.investment,
+        };
+        return acc;
+      }, {});
 
     // Get recent transactions (last 10)
     stats.recentTransactions = transactions
