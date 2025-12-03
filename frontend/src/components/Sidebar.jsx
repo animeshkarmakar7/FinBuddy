@@ -7,6 +7,7 @@ import {
   PieChart, 
   Settings, 
   User,
+  Target,
   ChevronLeft,
   ChevronRight,
   Menu,
@@ -23,6 +24,7 @@ const Sidebar = ({ activeSection, setActiveSection }) => {
     { name: 'Investments', icon: TrendingUp },
     { name: 'Wallet', icon: Wallet },
     { name: 'Analytics', icon: PieChart },
+    { name: 'Goals', icon: Target },
     { name: 'Profile', icon: User },
     { name: 'Settings', icon: Settings },
   ];

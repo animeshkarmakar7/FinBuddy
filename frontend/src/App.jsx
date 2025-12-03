@@ -6,6 +6,7 @@ import Dashboard from "./components/Dashboard";
 import Investments from "./components/Investments";
 import Wallet from "./components/Wallet";
 import Analytics from "./components/Analytics";
+import Goals from "./components/Goals";
 import Profile from "./components/Profile";
 import Settings from "./components/Settings";
 
@@ -40,6 +41,8 @@ function App() {
         return <Wallet />;
       case 'Analytics':
         return <Analytics />;
+      case 'Goals':
+        return <Goals />;
       case 'Profile':
         return <Profile />;
       case 'Settings':

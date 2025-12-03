@@ -10,6 +10,9 @@ import connectDB from './config/database.js';
 import authRoutes from './routes/auth.js';
 import transactionRoutes from './routes/transactions.js';
 import paymentMethodRoutes from './routes/paymentMethods.js';
+import aiRoutes from './routes/ai.js';
+import goalRoutes from './routes/goals.js';
+import forecastRoutes from './routes/forecast.js';
 
 // Load environment variables
 dotenv.config();
@@ -55,6 +58,9 @@ app.use(cookieParser());
 app.use('/api/auth', authRoutes);
 app.use('/api/transactions', transactionRoutes);
 app.use('/api/payment-methods', paymentMethodRoutes);
+app.use('/api/ai', aiRoutes);
+app.use('/api/goals', goalRoutes);
+app.use('/api/forecast', forecastRoutes);
 
 // Health check route
 app.get('/api/health', (req, res) => {
