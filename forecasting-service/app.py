@@ -18,7 +18,6 @@ def health_check():
 
 @app.route('/api/forecast/spending', methods=['POST'])
 def forecast_spending():
-    """Predict future spending using Prophet"""
     try:
         data = request.json
         transactions = data.get('transactions', [])
@@ -29,11 +28,9 @@ def forecast_spending():
                 'success': False,
                 'message': 'Need at least 3 months of data'
             }), 400
-        
-        # Prepare data
+
         df = prepare_transaction_data(transactions)
-        
-        # Train Prophet model
+
         model = Prophet(
             yearly_seasonality=True,
             weekly_seasonality=True,

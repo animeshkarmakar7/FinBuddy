@@ -13,6 +13,8 @@ import paymentMethodRoutes from './routes/paymentMethods.js';
 import aiRoutes from './routes/ai.js';
 import goalRoutes from './routes/goals.js';
 import forecastRoutes from './routes/forecast.js';
+import aiCoachRoutes from './routes/aiCoach.js';
+import debugRoutes from './routes/debug.js';
 
 // Load environment variables
 dotenv.config();
@@ -61,6 +63,8 @@ app.use('/api/payment-methods', paymentMethodRoutes);
 app.use('/api/ai', aiRoutes);
 app.use('/api/goals', goalRoutes);
 app.use('/api/forecast', forecastRoutes);
+app.use('/api/ai-coach', aiCoachRoutes);
+app.use('/api/debug', debugRoutes);
 
 // Health check route
 app.get('/api/health', (req, res) => {

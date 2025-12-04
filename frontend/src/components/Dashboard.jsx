@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { transactionAPI } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import AddTransactionModal from './AddTransactionModal';
+import AICoach from './AICoach';
 import {
   TrendingUp,
   TrendingDown,
@@ -21,6 +22,7 @@ import {
   Car,
   Smartphone,
   Utensils,
+  Sparkles,
 } from 'lucide-react';
 import {
   PieChart,
@@ -41,6 +43,7 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [showAddTransaction, setShowAddTransaction] = useState(false);
+  const [showAICoach, setShowAICoach] = useState(false);
   const [transactionType, setTransactionType] = useState('expense');
   
   // Real data state
@@ -232,13 +235,22 @@ const Dashboard = () => {
                   Last updated: Just now
                 </p>
               </div>
-              <button 
-                onClick={() => handleAddTransaction('expense')}
-                className="hidden md:flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-500 to-violet-600 text-white rounded-xl shadow-lg shadow-violet-500/30 hover:shadow-xl hover:scale-105 transition-all duration-300"
-              >
-                <Plus className="w-5 h-5" />
-                Add Expense
-              </button>
+              <div className="flex gap-3">
+                <button 
+                  onClick={() => setShowAICoach(true)}
+                  className="hidden md:flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl shadow-lg shadow-purple-500/30 hover:shadow-xl hover:scale-105 transition-all duration-300"
+                >
+                  <Sparkles className="w-5 h-5" />
+                  AI Coach
+                </button>
+                <button 
+                  onClick={() => handleAddTransaction('expense')}
+                  className="hidden md:flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-500 to-violet-600 text-white rounded-xl shadow-lg shadow-violet-500/30 hover:shadow-xl hover:scale-105 transition-all duration-300"
+                >
+                  <Plus className="w-5 h-5" />
+                  Add Expense
+                </button>
+              </div>
             </div>
           </div>
 
@@ -501,6 +513,11 @@ const Dashboard = () => {
         onSuccess={fetchDashboardData}
         type={transactionType}
       />
+
+      {/* AI Coach Modal */}
+      {showAICoach && (
+        <AICoach onClose={() => setShowAICoach(false)} />
+      )}
 
       {/* Animations */}
       <style jsx>{`
