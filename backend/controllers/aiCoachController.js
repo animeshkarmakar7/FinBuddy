@@ -87,3 +87,157 @@ export const chat = async (req, res) => {
     });
   }
 };
+
+// @desc    Execute AI-suggested action (create goal)
+// @route   POST /api/ai-coach/action/create-goal
+// @access  Private
+export const executeCreateGoal = async (req, res) => {
+  try {
+    const { title, targetAmount, deadline, category } = req.body;
+    
+    if (!title || !targetAmount || !deadline) {
+      return res.status(400).json({
+        success: false,
+        message: 'Title, target amount, and deadline are required',
+      });
+    }
+
+    const Goal = (await import('../models/Goal.js')).default;
+    
+    const goal = await Goal.create({
+      userId: req.user.id,
+      title,
+      targetAmount,
+      currentAmount: 0,
+      deadline: new Date(deadline),
+      category: category || 'other',
+      status: 'active'
+    });
+    
+    res.status(201).json({
+      success: true,
+      message: `Goal "${title}" created successfully!`,
+      goal: {
+        id: goal._id,
+        title: goal.title,
+        targetAmount: goal.targetAmount,
+        deadline: goal.deadline,
+        milestones: goal.milestones
+      }
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+// @desc    Execute AI-suggested action (add transaction)
+// @route   POST /api/ai-coach/action/add-transaction
+// @access  Private
+export const executeAddTransaction = async (req, res) => {
+  try {
+    const { type, amount, category, merchant, description } = req.body;
+    
+    if (!type || !amount || !category || !merchant) {
+      return res.status(400).json({
+        success: false,
+        message: 'Type, amount, category, and merchant are required',
+      });
+    }
+
+    const Transaction = (await import('../models/Transaction.js')).default;
+    
+    const transaction = await Transaction.create({
+      userId: req.user.id,
+      type,
+      amount,
+      category,
+      merchant,
+      description: description || '',
+      date: new Date()
+    });
+    
+    res.status(201).json({
+      success: true,
+      message: `${type === 'income' ? 'Income' : 'Expense'} of ₹${amount} added successfully!`,
+      transaction: {
+        id: transaction._id,
+        type: transaction.type,
+        amount: transaction.amount,
+        category: transaction.category,
+        merchant: transaction.merchant
+      }
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+// @desc    Execute AI-suggested action (update goal progress)
+// @route   POST /api/ai-coach/action/update-goal
+// @access  Private
+export const executeUpdateGoal = async (req, res) => {
+  try {
+    const { goalTitle, amount, note } = req.body;
+    
+    if (!goalTitle || !amount) {
+      return res.status(400).json({
+        success: false,
+        message: 'Goal title and amount are required',
+      });
+    }
+
+    const Goal = (await import('../models/Goal.js')).default;
+    
+    // Find goal by title (case-insensitive)
+    const goal = await Goal.findOne({ 
+      userId: req.user.id, 
+      title: { $regex: new RegExp(goalTitle, 'i') },
+      status: 'active'
+    });
+    
+    if (!goal) {
+      return res.status(404).json({
+        success: false,
+        message: `Goal "${goalTitle}" not found`,
+      });
+    }
+    
+    // Add contribution
+    await goal.addContribution(amount, note || 'AI-assisted contribution', 'ai_suggested');
+    
+    // Check for newly achieved milestones
+    const newlyAchieved = goal.milestones.filter(m => 
+      m.achieved && 
+      m.achievedDate && 
+      new Date(m.achievedDate).getTime() > Date.now() - 5000
+    );
+    
+    res.status(200).json({
+      success: true,
+      message: `Added ₹${amount} to ${goal.title}!`,
+      goal: {
+        id: goal._id,
+        title: goal.title,
+        currentAmount: goal.currentAmount,
+        targetAmount: goal.targetAmount,
+        progress: ((goal.currentAmount / goal.targetAmount) * 100).toFixed(1),
+        remaining: goal.targetAmount - goal.currentAmount
+      },
+      milestonesAchieved: newlyAchieved.map(m => ({
+        percentage: m.percentage,
+        reward: m.reward
+      }))
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};

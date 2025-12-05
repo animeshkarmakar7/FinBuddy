@@ -169,18 +169,74 @@ Be friendly, specific, and use their actual numbers. Keep it concise (under 200 
   }
 
   /**
-   * Chat with AI coach - Enhanced with full user context
+   * Chat with AI coach - Enhanced with action detection
    */
   async chat(userId, message, conversationHistory = []) {
     try {
       const financialData = await this.gatherFinancialData(userId);
       
-      // Build comprehensive system prompt with user's complete financial profile
+      // Build comprehensive system prompt with action instructions
       const systemPrompt = this.createChatSystemPrompt(financialData);
+      
+      // Add action detection instructions
+      const enhancedPrompt = `${systemPrompt}
+
+IMPORTANT - ACTION DETECTION:
+When the user wants to:
+1. CREATE A GOAL - They mention saving for something, buying something, or planning for an expense
+2. ADD TRANSACTION - They mention spending money or receiving income
+3. UPDATE GOAL - They mention adding money to an existing goal
+
+If you detect an action intent, respond naturally AND include a JSON block at the end:
+
+For GOAL CREATION:
+\`\`\`json
+{
+  "action": "create_goal",
+  "title": "Goal name",
+  "targetAmount": amount_in_rupees,
+  "deadline": "YYYY-MM-DD",
+  "category": "travel|vehicle|education|etc"
+}
+\`\`\`
+
+For TRANSACTION:
+\`\`\`json
+{
+  "action": "add_transaction",
+  "type": "income|expense",
+  "amount": amount_in_rupees,
+  "category": "category_name",
+  "merchant": "merchant_name"
+}
+\`\`\`
+
+For GOAL UPDATE:
+\`\`\`json
+{
+  "action": "update_goal",
+  "goalTitle": "goal_name",
+  "amount": amount_in_rupees
+}
+\`\`\`
+
+Example:
+User: "I want to save ₹50,000 for a Goa trip by June"
+You: "Great idea! A Goa trip sounds amazing! 🏖️ Based on your savings rate, you can definitely make this happen. Let me help you set this up!
+
+\`\`\`json
+{
+  "action": "create_goal",
+  "title": "Goa Trip",
+  "targetAmount": 50000,
+  "deadline": "2025-06-30",
+  "category": "travel"
+}
+\`\`\`"`;
       
       const systemMessage = {
         role: 'system',
-        content: systemPrompt
+        content: enhancedPrompt
       };
 
       const messages = [
@@ -196,13 +252,19 @@ Be friendly, specific, and use their actual numbers. Keep it concise (under 200 
         messages,
         model: this.model,
         temperature: 0.7,
-        max_tokens: 500,
+        max_tokens: 600,
       });
+      
+      const responseText = completion.choices[0]?.message?.content || 'No response generated';
+      
+      // Parse response for action suggestions
+      const parsedResponse = this.parseActionFromResponse(responseText);
       
       return {
         success: true,
-        message: completion.choices[0]?.message?.content || 'No response generated',
+        message: parsedResponse.message,
         context: financialData,
+        suggestedAction: parsedResponse.action || null
       };
     } catch (error) {
       console.error('Chat error details:', {
@@ -216,6 +278,34 @@ Be friendly, specific, and use their actual numbers. Keep it concise (under 200 
       
       throw new Error(error.message || 'Failed to process chat message');
     }
+  }
+  
+  /**
+   * Parse AI response for action suggestions
+   */
+  parseActionFromResponse(responseText) {
+    // Look for JSON code block
+    const jsonMatch = responseText.match(/```json\s*([\s\S]*?)\s*```/);
+    
+    if (jsonMatch) {
+      try {
+        const action = JSON.parse(jsonMatch[1]);
+        // Remove JSON block from message
+        const message = responseText.replace(/```json\s*[\s\S]*?\s*```/, '').trim();
+        
+        return {
+          message,
+          action
+        };
+      } catch (error) {
+        console.error('Failed to parse action JSON:', error);
+      }
+    }
+    
+    return {
+      message: responseText,
+      action: null
+    };
   }
   
   /**

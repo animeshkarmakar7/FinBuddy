@@ -7,6 +7,7 @@ const api = axios.create({
     'Content-Type': 'application/json',
   },
   withCredentials: true, // Send cookies with requests
+  timeout: 30000, // 30 second timeout
 });
 
 // Request interceptor to add token to headers
@@ -23,16 +24,59 @@ api.interceptors.request.use(
   }
 );
 
-// Response interceptor to handle errors
+// Response interceptor to handle errors and retry
 api.interceptors.response.use(
   (response) => response,
-  (error) => {
-    if (error.response?.status === 401) {
-      // Unauthorized - clear token and redirect to login
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-      window.location.href = '/';
+  async (error) => {
+    const originalRequest = error.config;
+    
+    // Handle network errors with retry
+    if (error.code === 'ECONNABORTED' || error.message === 'Network Error') {
+      if (!originalRequest._retry) {
+        originalRequest._retry = true;
+        console.log('⚠️ Network error, retrying request...');
+        await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1 second
+        return api(originalRequest);
+      }
     }
+    
+    // Handle 401 Unauthorized
+    if (error.response?.status === 401) {
+      // Check if this is a token expiration issue
+      const token = localStorage.getItem('token');
+      
+      if (token && !originalRequest._retry) {
+        originalRequest._retry = true;
+        
+        try {
+          // Try to refresh the token by getting user info
+          const response = await api.get('/auth/me');
+          if (response.data) {
+            // Token is still valid, retry original request
+            return api(originalRequest);
+          }
+        } catch (refreshError) {
+          // Token is invalid, clear and redirect
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+          window.location.href = '/';
+        }
+      } else {
+        // No token or retry failed, redirect to login
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        window.location.href = '/';
+      }
+    }
+    
+    // Handle 500 errors with retry
+    if (error.response?.status === 500 && !originalRequest._retry) {
+      originalRequest._retry = true;
+      console.log('⚠️ Server error, retrying request...');
+      await new Promise(resolve => setTimeout(resolve, 2000)); // Wait 2 seconds
+      return api(originalRequest);
+    }
+    
     return Promise.reject(error);
   }
 );

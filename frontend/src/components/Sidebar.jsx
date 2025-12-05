@@ -12,7 +12,8 @@ import {
   ChevronRight,
   Menu,
   X,
-  LogOut
+  LogOut,
+  Sparkles
 } from 'lucide-react';
 
 const Sidebar = ({ activeSection, setActiveSection }) => {
@@ -21,6 +22,7 @@ const Sidebar = ({ activeSection, setActiveSection }) => {
 
   const menuItems = [
     { name: 'Dashboard', icon: Home },
+    { name: 'AI Coach', icon: Sparkles, gradient: true }, // New AI Coach item
     { name: 'Investments', icon: TrendingUp },
     { name: 'Wallet', icon: Wallet },
     { name: 'Analytics', icon: PieChart },
@@ -101,6 +103,7 @@ const Sidebar = ({ activeSection, setActiveSection }) => {
           {menuItems.map((item, index) => {
             const Icon = item.icon;
             const isActive = activeSection === item.name;
+            const isAICoach = item.name === 'AI Coach';
             
             return (
               <button
@@ -108,8 +111,12 @@ const Sidebar = ({ activeSection, setActiveSection }) => {
                 onClick={() => setActiveSection(item.name)}
                 className={`w-full flex items-center gap-4 px-4 py-3.5 rounded-xl transition-all duration-300
                   ${isActive 
-                    ? 'bg-gradient-to-r from-blue-500 to-violet-600 text-white shadow-lg shadow-violet-500/30 scale-105' 
-                    : 'text-violet-700 hover:bg-white/60 hover:shadow-md hover:scale-102'
+                    ? isAICoach
+                      ? 'bg-gradient-to-r from-violet-600 to-purple-600 text-white shadow-lg shadow-purple-500/40 scale-105'
+                      : 'bg-gradient-to-r from-blue-500 to-violet-600 text-white shadow-lg shadow-violet-500/30 scale-105'
+                    : isAICoach
+                      ? 'bg-gradient-to-r from-violet-100 to-purple-100 text-violet-700 hover:from-violet-200 hover:to-purple-200 hover:shadow-md hover:scale-102'
+                      : 'text-violet-700 hover:bg-white/60 hover:shadow-md hover:scale-102'
                   }
                   ${!isOpen && 'lg:justify-center lg:px-2'}
                   group relative overflow-hidden`}
@@ -126,14 +133,15 @@ const Sidebar = ({ activeSection, setActiveSection }) => {
                 
                 {/* Icon */}
                 <Icon className={`w-5 h-5 transition-all duration-300 relative z-10
-                  ${isActive ? 'text-white' : 'text-violet-600 group-hover:text-violet-700'}
-                  ${!isOpen && 'lg:w-6 lg:h-6'}`} 
+                  ${isActive ? 'text-white' : isAICoach ? 'text-violet-600' : 'text-violet-600 group-hover:text-violet-700'}
+                  ${!isOpen && 'lg:w-6 lg:h-6'}
+                  ${isAICoach && !isActive && 'animate-pulse'}`} 
                 />
                 
                 {/* Label */}
                 <span className={`font-medium transition-all duration-300 relative z-10
                   ${!isOpen && 'lg:opacity-0 lg:w-0 lg:hidden'}
-                  ${isActive ? 'text-white' : 'group-hover:text-violet-800'}`}
+                  ${isActive ? 'text-white' : isAICoach ? 'text-violet-700' : 'group-hover:text-violet-800'}`}
                 >
                   {item.name}
                 </span>

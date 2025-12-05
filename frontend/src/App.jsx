@@ -9,6 +9,7 @@ import Analytics from "./components/Analytics";
 import Goals from "./components/Goals";
 import Profile from "./components/Profile";
 import Settings from "./components/Settings";
+import AICoachPage from "./components/AICoachPage";
 
 function App() {
   const [activeSection, setActiveSection] = useState('Dashboard');
@@ -35,6 +36,8 @@ function App() {
     switch (activeSection) {
       case 'Dashboard':
         return <Dashboard />;
+      case 'AI Coach':
+        return <AICoachPage />;
       case 'Investments':
         return <Investments />;
       case 'Wallet':

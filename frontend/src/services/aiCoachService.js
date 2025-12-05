@@ -16,4 +16,14 @@ export const aiCoachAPI = {
   // Chat with AI coach
   chat: (message, history = []) => 
     api.post(`${AI_COACH_BASE}/chat`, { message, history }),
+  
+  // Execute AI-suggested actions
+  executeCreateGoal: (goalData) =>
+    api.post(`${AI_COACH_BASE}/action/create-goal`, goalData),
+    
+  executeAddTransaction: (transactionData) =>
+    api.post(`${AI_COACH_BASE}/action/add-transaction`, transactionData),
+    
+  executeUpdateGoal: (goalUpdate) =>
+    api.post(`${AI_COACH_BASE}/action/update-goal`, goalUpdate),
 };

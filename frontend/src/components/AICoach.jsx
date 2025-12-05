@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { MessageCircle, Send, Sparkles, X, TrendingUp, DollarSign, Target, Loader } from 'lucide-react';
 import { useAIChat, useAICoach } from '../hooks/useAICoach';
+import ActionButton from './ActionButton';
 
-const AICoach = ({ onClose }) => {
-  const { messages, loading, sendMessage, clearChat } = useAIChat();
+const AICoach = ({ onClose, isFullPage = false }) => {
+  const { messages, loading, suggestedAction, sendMessage, executeAction, dismissAction, clearChat } = useAIChat();
   const { insights, getInsights } = useAICoach();
   const [input, setInput] = useState('');
   const [showInsights, setShowInsights] = useState(true);
@@ -40,27 +41,38 @@ const AICoach = ({ onClose }) => {
     "Analyze my spending patterns",
   ];
 
+  // Wrapper classes based on mode
+  const wrapperClass = isFullPage 
+    ? "h-full flex flex-col"
+    : "fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-2 sm:p-4";
+    
+  const containerClass = isFullPage
+    ? "h-full flex flex-col"
+    : "bg-white rounded-xl sm:rounded-2xl shadow-2xl w-full max-w-4xl h-[95vh] sm:h-[85vh] md:h-[80vh] flex flex-col";
+
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full h-[80vh] flex flex-col">
+    <div className={wrapperClass}>
+      <div className={containerClass}>
         {/* Header */}
-        <div className="bg-gradient-to-r from-violet-600 to-purple-600 p-6 rounded-t-2xl flex-shrink-0">
+        <div className="bg-gradient-to-r from-violet-600 to-purple-600 p-4 sm:p-6 rounded-t-xl sm:rounded-t-2xl flex-shrink-0">
           <div className="flex items-center justify-between text-white">
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center">
-                <Sparkles className="w-7 h-7" />
+            <div className="flex items-center gap-2 sm:gap-3">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-white/20 rounded-full flex items-center justify-center">
+                <Sparkles className="w-5 h-5 sm:w-7 sm:h-7" />
               </div>
               <div>
-                <h2 className="text-2xl font-bold">AI Financial Coach</h2>
-                <p className="text-violet-100 text-sm">Powered by Groq & Llama 3</p>
+                <h2 className="text-xl sm:text-2xl font-bold">AI Financial Coach</h2>
+                <p className="text-violet-100 text-xs sm:text-sm">Powered by Groq & Llama 3</p>
               </div>
             </div>
-            <button
-              onClick={onClose}
-              className="p-2 hover:bg-white/20 rounded-lg transition-colors"
-            >
-              <X className="w-6 h-6" />
-            </button>
+            {!isFullPage && onClose && (
+              <button
+                onClick={onClose}
+                className="p-2 hover:bg-white/20 rounded-lg transition-colors"
+              >
+                <X className="w-5 h-5 sm:w-6 sm:h-6" />
+              </button>
+            )}
           </div>
         </div>
 
@@ -144,6 +156,17 @@ const AICoach = ({ onClose }) => {
                   <span className="text-gray-600">AI is thinking...</span>
                 </div>
               </div>
+            </div>
+          )}
+          
+          {/* Suggested Action Button */}
+          {suggestedAction && !loading && (
+            <div className="mt-4">
+              <ActionButton
+                action={suggestedAction}
+                onExecute={executeAction}
+                onDismiss={dismissAction}
+              />
             </div>
           )}
         </div>
