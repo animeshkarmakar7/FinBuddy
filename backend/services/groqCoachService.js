@@ -169,23 +169,18 @@ Be friendly, specific, and use their actual numbers. Keep it concise (under 200 
   }
 
   /**
-   * Chat with AI coach
+   * Chat with AI coach - Enhanced with full user context
    */
   async chat(userId, message, conversationHistory = []) {
     try {
       const financialData = await this.gatherFinancialData(userId);
       
+      // Build comprehensive system prompt with user's complete financial profile
+      const systemPrompt = this.createChatSystemPrompt(financialData);
+      
       const systemMessage = {
         role: 'system',
-        content: `You are a friendly, knowledgeable financial advisor for FinBuddy. 
-      
-User's Financial Summary:
-- Monthly Income: ₹${financialData.monthlyIncome.toLocaleString()}
-- Monthly Expenses: ₹${financialData.monthlyExpenses.toLocaleString()}
-- Savings Rate: ${financialData.savingsRate}%
-- Active Goals: ${financialData.activeGoals}
-
-Keep responses concise (2-3 sentences), encouraging, and actionable. Use Indian Rupees (₹).`
+        content: systemPrompt
       };
 
       const messages = [
@@ -201,7 +196,7 @@ Keep responses concise (2-3 sentences), encouraging, and actionable. Use Indian 
         messages,
         model: this.model,
         temperature: 0.7,
-        max_tokens: 400,
+        max_tokens: 500,
       });
       
       return {
@@ -222,41 +217,163 @@ Keep responses concise (2-3 sentences), encouraging, and actionable. Use Indian 
       throw new Error(error.message || 'Failed to process chat message');
     }
   }
+  
+  /**
+   * Create comprehensive system prompt for chat
+   */
+  createChatSystemPrompt(data) {
+    const userName = data.user.name || 'there';
+    const memberSince = data.user.memberSince 
+      ? new Date(data.user.memberSince).toLocaleDateString('en-IN', { month: 'short', year: 'numeric' })
+      : 'recently';
+    
+    // Format goals for prompt
+    const goalsText = data.goals.active.length > 0
+      ? data.goals.active.map(g => 
+          `- ${g.title}: ₹${g.currentAmount.toLocaleString()}/₹${g.targetAmount.toLocaleString()} (${g.progress}% complete, ${g.status})`
+        ).join('\n')
+      : '- No active goals';
+    
+    // Format top categories
+    const categoriesText = data.topCategories.length > 0
+      ? data.topCategories.map(c => 
+          `- ${c.category}: ₹${c.amount.toLocaleString()} (${c.percentage}%)`
+        ).join('\n')
+      : '- No spending data';
+    
+    // Format trends
+    const trendsText = data.trends.growth
+      ? `Income: ${data.trends.growth.income > 0 ? '+' : ''}${data.trends.growth.income}%, Expenses: ${data.trends.growth.expenses > 0 ? '+' : ''}${data.trends.growth.expenses}%, Savings: ${data.trends.growth.savings > 0 ? '+' : ''}${data.trends.growth.savings}%`
+      : 'Not enough data';
+    
+    // Format insights
+    const insightsText = data.insights.length > 0
+      ? data.insights.map(i => `• ${i}`).join('\n')
+      : '• Getting started with FinBuddy';
+    
+    return `You are a personal financial advisor for ${userName}, a FinBuddy user.
+
+📊 COMPLETE USER PROFILE:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Member Since: ${memberSince}
+
+💰 ALL-TIME STATS:
+- Total Income: ₹${data.allTime.totalIncome.toLocaleString()}
+- Total Expenses: ₹${data.allTime.totalExpenses.toLocaleString()}
+- Net Worth: ₹${data.allTime.netWorth.toLocaleString()}
+- Total Transactions: ${data.allTime.transactionCount}
+
+📈 CURRENT MONTH (Last 30 Days):
+- Income: ₹${data.current.monthlyIncome.toLocaleString()}
+- Expenses: ₹${data.current.monthlyExpenses.toLocaleString()}
+- Savings: ₹${data.current.monthlySavings.toLocaleString()}
+- Savings Rate: ${data.current.savingsRate}%
+
+📊 TRENDS (vs Last Month):
+${trendsText}
+
+🎯 ACTIVE GOALS (${data.goals.activeCount}):
+${goalsText}
+
+💳 TOP SPENDING CATEGORIES:
+${categoriesText}
+
+💡 KEY INSIGHTS:
+${insightsText}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+INSTRUCTIONS:
+- Address ${userName} by name when appropriate
+- Provide personalized, data-driven advice based on their ACTUAL numbers
+- Reference their goals, trends, and spending patterns
+- Be encouraging but realistic
+- Keep responses concise (2-4 sentences)
+- Use Indian Rupees (₹) format
+- If they ask about specific categories or goals, use the data above
+- Proactively suggest improvements based on their trends
+
+Remember: You have complete knowledge of ${userName}'s financial situation. Use it to give specific, actionable advice!`;
+  }
 
   /**
-   * Gather user's financial data for context
+   * Gather comprehensive user financial data for AI context
    */
   async gatherFinancialData(userId) {
-    const thirtyDaysAgo = new Date();
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-
-    const transactions = await Transaction.find({
+    const User = (await import('../models/User.js')).default;
+    const user = await User.findById(userId).select('name email createdAt');
+    
+    // Time periods
+    const now = new Date();
+    const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+    const sixMonthsAgo = new Date(now.getTime() - 180 * 24 * 60 * 60 * 1000);
+    
+    // Get ALL transactions for all-time stats
+    const allTransactions = await Transaction.find({ userId });
+    
+    // Get last 30 days transactions
+    const recentTransactions = await Transaction.find({
       userId,
       date: { $gte: thirtyDaysAgo },
     });
-
-    const goals = await Goal.find({ userId, status: 'active' });
-
-    const income = transactions
+    
+    // Get last 6 months transactions for trends
+    const sixMonthTransactions = await Transaction.find({
+      userId,
+      date: { $gte: sixMonthsAgo },
+    });
+    
+    // Get goals
+    const activeGoals = await Goal.find({ userId, status: 'active' });
+    const completedGoals = await Goal.find({ userId, status: 'completed' });
+    
+    // === ALL-TIME STATS ===
+    const allTimeIncome = allTransactions
       .filter(t => t.type === 'income')
       .reduce((sum, t) => sum + t.amount, 0);
-
-    const expenses = transactions
+      
+    const allTimeExpenses = allTransactions
       .filter(t => t.type === 'expense')
       .reduce((sum, t) => sum + t.amount, 0);
-
-    const savings = income - expenses;
-    const savingsRate = income > 0 ? ((savings / income) * 100).toFixed(1) : 0;
-
+      
+    const netWorth = allTimeIncome - allTimeExpenses;
+    
+    // === LAST 30 DAYS ===
+    const monthlyIncome = recentTransactions
+      .filter(t => t.type === 'income')
+      .reduce((sum, t) => sum + t.amount, 0);
+      
+    const monthlyExpenses = recentTransactions
+      .filter(t => t.type === 'expense')
+      .reduce((sum, t) => sum + t.amount, 0);
+      
+    const monthlySavings = monthlyIncome - monthlyExpenses;
+    const savingsRate = monthlyIncome > 0 ? ((monthlySavings / monthlyIncome) * 100).toFixed(1) : 0;
+    
+    // === MONTHLY TRENDS (Last 6 months) ===
+    const monthlyTrends = this.calculateMonthlyTrends(sixMonthTransactions);
+    
+    // === CATEGORY BREAKDOWN ===
     const categorySpending = {};
-    transactions
+    recentTransactions
       .filter(t => t.type === 'expense')
       .forEach(t => {
         categorySpending[t.category] = (categorySpending[t.category] || 0) + t.amount;
       });
-
+      
+    // Sort categories by amount
+    const topCategories = Object.entries(categorySpending)
+      .map(([category, amount]) => ({
+        category,
+        amount,
+        percentage: monthlyExpenses > 0 ? ((amount / monthlyExpenses) * 100).toFixed(1) : 0
+      }))
+      .sort((a, b) => b.amount - a.amount)
+      .slice(0, 5);
+    
+    // === TOP MERCHANTS ===
     const merchantMap = {};
-    transactions
+    recentTransactions
       .filter(t => t.type === 'expense')
       .forEach(t => {
         if (!merchantMap[t.merchant]) {
@@ -265,21 +382,211 @@ Keep responses concise (2-3 sentences), encouraging, and actionable. Use Indian 
         merchantMap[t.merchant].total += t.amount;
         merchantMap[t.merchant].count++;
       });
-
+      
     const topMerchants = Object.values(merchantMap)
       .sort((a, b) => b.total - a.total)
       .slice(0, 5);
-
-    return {
-      monthlyIncome: income,
-      monthlyExpenses: expenses,
-      monthlySavings: savings,
+    
+    // === GOALS ANALYSIS ===
+    const goalsData = activeGoals.map(goal => {
+      const progress = goal.targetAmount > 0 
+        ? ((goal.currentAmount / goal.targetAmount) * 100).toFixed(1)
+        : 0;
+        
+      const remaining = goal.targetAmount - goal.currentAmount;
+      const deadline = new Date(goal.deadline);
+      const daysLeft = Math.ceil((deadline - now) / (1000 * 60 * 60 * 24));
+      const monthsLeft = Math.ceil(daysLeft / 30);
+      const requiredMonthlySavings = monthsLeft > 0 ? remaining / monthsLeft : remaining;
+      const onTrack = monthlySavings >= requiredMonthlySavings;
+      
+      return {
+        title: goal.title,
+        targetAmount: goal.targetAmount,
+        currentAmount: goal.currentAmount,
+        progress: parseFloat(progress),
+        remaining,
+        deadline: goal.deadline,
+        daysLeft,
+        monthsLeft,
+        requiredMonthlySavings,
+        onTrack,
+        status: onTrack ? 'on-track' : 'behind'
+      };
+    });
+    
+    // === INSIGHTS ===
+    const insights = this.generateInsights({
+      monthlyTrends,
       savingsRate,
+      goalsData,
+      topCategories
+    });
+    
+    return {
+      // User Profile
+      user: {
+        name: user?.name || 'User',
+        email: user?.email,
+        memberSince: user?.createdAt,
+      },
+      
+      // All-Time Stats
+      allTime: {
+        totalIncome: allTimeIncome,
+        totalExpenses: allTimeExpenses,
+        netWorth,
+        transactionCount: allTransactions.length,
+      },
+      
+      // Last 30 Days
+      current: {
+        monthlyIncome,
+        monthlyExpenses,
+        monthlySavings,
+        savingsRate: parseFloat(savingsRate),
+        transactionCount: recentTransactions.length,
+      },
+      
+      // Trends
+      trends: monthlyTrends,
+      
+      // Categories
       categorySpending,
+      topCategories,
+      
+      // Merchants
       topMerchants,
-      activeGoals: goals.length,
-      transactionCount: transactions.length,
+      
+      // Goals
+      goals: {
+        active: goalsData,
+        activeCount: activeGoals.length,
+        completedCount: completedGoals.length,
+      },
+      
+      // Insights
+      insights,
+      
+      // Legacy fields for backward compatibility
+      monthlyIncome,
+      monthlyExpenses,
+      monthlySavings,
+      savingsRate: parseFloat(savingsRate),
+      activeGoals: activeGoals.length,
+      transactionCount: recentTransactions.length,
     };
+  }
+  
+  /**
+   * Calculate monthly trends for last 6 months
+   */
+  calculateMonthlyTrends(transactions) {
+    const monthlyData = {};
+    
+    transactions.forEach(t => {
+      const month = new Date(t.date).toISOString().slice(0, 7); // YYYY-MM
+      
+      if (!monthlyData[month]) {
+        monthlyData[month] = { income: 0, expenses: 0 };
+      }
+      
+      if (t.type === 'income') {
+        monthlyData[month].income += t.amount;
+      } else {
+        monthlyData[month].expenses += t.amount;
+      }
+    });
+    
+    // Calculate savings for each month
+    const trends = Object.entries(monthlyData)
+      .map(([month, data]) => ({
+        month,
+        income: data.income,
+        expenses: data.expenses,
+        savings: data.income - data.expenses,
+        savingsRate: data.income > 0 ? ((data.income - data.expenses) / data.income * 100).toFixed(1) : 0
+      }))
+      .sort((a, b) => a.month.localeCompare(b.month));
+    
+    // Calculate growth rates
+    if (trends.length >= 2) {
+      const current = trends[trends.length - 1];
+      const previous = trends[trends.length - 2];
+      
+      const incomeGrowth = previous.income > 0 
+        ? (((current.income - previous.income) / previous.income) * 100).toFixed(1)
+        : 0;
+        
+      const expenseGrowth = previous.expenses > 0
+        ? (((current.expenses - previous.expenses) / previous.expenses) * 100).toFixed(1)
+        : 0;
+        
+      const savingsGrowth = previous.savings > 0
+        ? (((current.savings - previous.savings) / previous.savings) * 100).toFixed(1)
+        : 0;
+      
+      return {
+        monthly: trends,
+        growth: {
+          income: parseFloat(incomeGrowth),
+          expenses: parseFloat(expenseGrowth),
+          savings: parseFloat(savingsGrowth),
+        }
+      };
+    }
+    
+    return {
+      monthly: trends,
+      growth: { income: 0, expenses: 0, savings: 0 }
+    };
+  }
+  
+  /**
+   * Generate insights from financial data
+   */
+  generateInsights(data) {
+    const insights = [];
+    
+    // Savings rate insight
+    if (data.savingsRate >= 20) {
+      insights.push(`Excellent savings rate of ${data.savingsRate}%!`);
+    } else if (data.savingsRate >= 10) {
+      insights.push(`Good savings rate of ${data.savingsRate}%, aim for 20%+`);
+    } else {
+      insights.push(`Low savings rate of ${data.savingsRate}%, try to save more`);
+    }
+    
+    // Trend insight
+    if (data.monthlyTrends.growth) {
+      const { income, expenses, savings } = data.monthlyTrends.growth;
+      
+      if (expenses > 5) {
+        insights.push(`Spending increased by ${expenses}% vs last month`);
+      } else if (expenses < -5) {
+        insights.push(`Great! Spending decreased by ${Math.abs(expenses)}%`);
+      }
+      
+      if (savings > 10) {
+        insights.push(`Savings improved by ${savings}% - keep it up!`);
+      }
+    }
+    
+    // Goals insight
+    const behindGoals = data.goalsData.filter(g => !g.onTrack);
+    if (behindGoals.length > 0) {
+      insights.push(`${behindGoals.length} goal(s) need attention`);
+    } else if (data.goalsData.length > 0) {
+      insights.push(`All goals are on track!`);
+    }
+    
+    // Top category insight
+    if (data.topCategories.length > 0) {
+      const top = data.topCategories[0];
+      insights.push(`Top spending: ${top.category} (${top.percentage}%)`);
+    }
+    
+    return insights;
   }
 
   /**
