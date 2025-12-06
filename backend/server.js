@@ -15,6 +15,8 @@ import goalRoutes from './routes/goals.js';
 import forecastRoutes from './routes/forecast.js';
 import aiCoachRoutes from './routes/aiCoach.js';
 import debugRoutes from './routes/debug.js';
+import healthRoutes from './routes/health.js';
+import analyticsRoutes from './routes/analytics.js';
 
 // Load environment variables
 dotenv.config();
@@ -57,6 +59,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
 // API Routes
+app.use('/api/health', healthRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/transactions', transactionRoutes);
 app.use('/api/payment-methods', paymentMethodRoutes);
@@ -64,6 +67,7 @@ app.use('/api/ai', aiRoutes);
 app.use('/api/goals', goalRoutes);
 app.use('/api/forecast', forecastRoutes);
 app.use('/api/ai-coach', aiCoachRoutes);
+app.use('/api/analytics', analyticsRoutes);
 app.use('/api/debug', debugRoutes);
 
 // Health check route

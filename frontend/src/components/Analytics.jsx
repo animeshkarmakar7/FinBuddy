@@ -18,6 +18,7 @@ import {
   Smartphone,
   Heart,
   Zap,
+  BarChart3,
 } from 'lucide-react';
 import {
   PieChart,
@@ -34,12 +35,14 @@ import {
   ResponsiveContainer,
   Legend,
 } from 'recharts';
+import ComparativeAnalysis from './ComparativeAnalysis';
 
 const Analytics = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [stats, setStats] = useState(null);
   const [transactions, setTransactions] = useState([]);
+  const [activeTab, setActiveTab] = useState('overview'); // 'overview' or 'comparison'
 
   useEffect(() => {
     fetchAnalyticsData();
@@ -249,8 +252,8 @@ const Analytics = () => {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-violet-50 flex items-center justify-center">
         <div className="text-center">
-          <AlertCircle className="w-16 h-16 text-rose-600 mx-auto mb-4" />
-          <p className="text-rose-600 font-semibold mb-4">{error}</p>
+          <AlertCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
+          <p className="text-red-600 font-semibold mb-4">{error}</p>
           <button
             onClick={fetchAnalyticsData}
             className="px-6 py-3 bg-gradient-to-r from-blue-500 to-violet-600 text-white rounded-xl shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300"
@@ -268,7 +271,7 @@ const Analytics = () => {
         <div className="max-w-7xl mx-auto">
           {/* Header */}
           <div className="mb-8 mt-16 lg:mt-0">
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
               <div>
                 <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-blue-600 to-violet-600 bg-clip-text text-transparent mb-2 animate-fade-in">
                   Analytics 📊
@@ -280,7 +283,43 @@ const Analytics = () => {
                 Export
               </button>
             </div>
+
+            {/* Tab Navigation */}
+            <div className="flex gap-2 border-b border-gray-200">
+              <button
+                onClick={() => setActiveTab('overview')}
+                className={`px-6 py-3 font-medium transition-all ${
+                  activeTab === 'overview'
+                    ? 'border-b-2 border-violet-600 text-violet-600'
+                    : 'text-gray-600 hover:text-gray-800'
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  <BarChart3 className="w-5 h-5" />
+                  Overview
+                </div>
+              </button>
+              <button
+                onClick={() => setActiveTab('comparison')}
+                className={`px-6 py-3 font-medium transition-all ${
+                  activeTab === 'comparison'
+                    ? 'border-b-2 border-violet-600 text-violet-600'
+                    : 'text-gray-600 hover:text-gray-800'
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  <TrendingUp className="w-5 h-5" />
+                  Comparative Analysis
+                </div>
+              </button>
+            </div>
           </div>
+
+          {/* Tab Content */}
+          {activeTab === 'comparison' ? (
+            <ComparativeAnalysis />
+          ) : (
+            <>
 
           {/* Summary Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
@@ -522,6 +561,8 @@ const Analytics = () => {
                 })}
               </div>
             </div>
+          )}
+            </>
           )}
         </div>
       </div>
