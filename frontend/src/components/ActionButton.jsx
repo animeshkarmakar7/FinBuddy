@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Check, X, Loader, TrendingUp, DollarSign, Target } from 'lucide-react';
+import { Check, X, Loader, TrendingUp, Target } from 'lucide-react';
+import IndianRupee from './icons/IndianRupee';
 
 const ActionButton = ({ action, onExecute, onDismiss }) => {
   const [loading, setLoading] = useState(false);
@@ -23,7 +24,7 @@ const ActionButton = ({ action, onExecute, onDismiss }) => {
       case 'create_goal':
         return <Target className="w-5 h-5" />;
       case 'add_transaction':
-        return <DollarSign className="w-5 h-5" />;
+        return <IndianRupee className="w-5 h-5" />;
       case 'update_goal':
         return <TrendingUp className="w-5 h-5" />;
       default:

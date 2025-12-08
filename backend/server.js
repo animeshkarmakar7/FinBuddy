@@ -4,6 +4,8 @@ import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
+import { createServer } from 'http';
+import { Server } from 'socket.io';
 import connectDB from './config/database.js';
 
 // Import routes
@@ -17,6 +19,8 @@ import aiCoachRoutes from './routes/aiCoach.js';
 import debugRoutes from './routes/debug.js';
 import healthRoutes from './routes/health.js';
 import analyticsRoutes from './routes/analytics.js';
+import investmentRoutes from './routes/investments.js';
+import marketRoutes from './routes/market.js';
 
 // Load environment variables
 dotenv.config();
@@ -42,13 +46,14 @@ app.use('/api/', limiter);
 const corsOptions = {
   origin: process.env.CLIENT_URL || 'http://localhost:5173',
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'Cookie'],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'Cookie', 'X-Requested-With', 'Accept'],
   exposedHeaders: ['Set-Cookie'],
+  optionsSuccessStatus: 200
 };
 app.use(cors(corsOptions));
 
-// Handle preflight requests
+// Handle preflight requests explicitly
 app.options('*', cors(corsOptions));
 
 // Body parser middleware
@@ -68,6 +73,8 @@ app.use('/api/goals', goalRoutes);
 app.use('/api/forecast', forecastRoutes);
 app.use('/api/ai-coach', aiCoachRoutes);
 app.use('/api/analytics', analyticsRoutes);
+app.use('/api/investments', investmentRoutes);
+app.use('/api/market', marketRoutes);
 app.use('/api/debug', debugRoutes);
 
 // Health check route
@@ -115,24 +122,73 @@ app.use((err, req, res, next) => {
 // Start server
 const PORT = process.env.PORT || 5000;
 
-const server = app.listen(PORT, () => {
+// Create HTTP server
+const httpServer = createServer(app);
+
+// Setup Socket.IO
+const io = new Server(httpServer, {
+  cors: {
+    origin: process.env.CLIENT_URL || 'http://localhost:5173',
+    methods: ['GET', 'POST'],
+    credentials: true
+  }
+});
+
+// Import services
+import priceUpdateService from './services/priceUpdateService.js';
+
+// WebSocket connection handling
+io.on('connection', (socket) => {
+  console.log(`✅ Client connected: ${socket.id}`);
+  
+  // Subscribe to price updates
+  socket.on('subscribe', (symbols) => {
+    console.log(`📊 Client subscribed to: ${symbols.join(', ')}`);
+    symbols.forEach(symbol => {
+      socket.join(symbol);
+    });
+  });
+  
+  // Unsubscribe from price updates
+  socket.on('unsubscribe', (symbols) => {
+    symbols.forEach(symbol => {
+      socket.leave(symbol);
+    });
+  });
+  
+  socket.on('disconnect', () => {
+    console.log(`❌ Client disconnected: ${socket.id}`);
+  });
+});
+
+// Price update events
+priceUpdateService.on('priceUpdate', ({ symbol, price, type }) => {
+  io.to(symbol).emit('priceUpdate', { symbol, price, type });
+});
+
+// Start services
+priceUpdateService.start();
+
+// Start server
+httpServer.listen(PORT, () => {
   console.log(`\n🚀 Server is running on port ${PORT}`);
   console.log(`📍 Environment: ${process.env.NODE_ENV || 'development'}`);
   console.log(`🌐 API URL: http://localhost:${PORT}`);
-  console.log(`🔗 Client URL: ${process.env.CLIENT_URL || 'http://localhost:5173'}\n`);
+  console.log(`🔗 Client URL: ${process.env.CLIENT_URL || 'http://localhost:5173'}`);
+  console.log(`⚡ WebSocket enabled for real-time updates\n`);
 });
 
 // Handle unhandled promise rejections
 process.on('unhandledRejection', (err) => {
   console.error(`❌ Unhandled Rejection: ${err.message}`);
   // Close server & exit process
-  server.close(() => process.exit(1));
+  httpServer.close(() => process.exit(1));
 });
 
 // Handle SIGTERM
 process.on('SIGTERM', () => {
   console.log('👋 SIGTERM received. Shutting down gracefully...');
-  server.close(() => {
+  httpServer.close(() => {
     console.log('✅ Process terminated');
   });
 });

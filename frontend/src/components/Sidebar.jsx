@@ -13,7 +13,9 @@ import {
   Menu,
   X,
   LogOut,
-  Sparkles
+  Sparkles,
+  Briefcase,
+  Search
 } from 'lucide-react';
 
 const Sidebar = ({ activeSection, setActiveSection }) => {
@@ -22,8 +24,9 @@ const Sidebar = ({ activeSection, setActiveSection }) => {
 
   const menuItems = [
     { name: 'Dashboard', icon: Home },
-    { name: 'AI Coach', icon: Sparkles, gradient: true }, // New AI Coach item
-    { name: 'Investments', icon: TrendingUp },
+    { name: 'AI Coach', icon: Sparkles, gradient: true },
+    { name: 'Portfolio', icon: Briefcase },
+    { name: 'Market Explorer', icon: Search },
     { name: 'Wallet', icon: Wallet },
     { name: 'Analytics', icon: PieChart },
     { name: 'Goals', icon: Target },

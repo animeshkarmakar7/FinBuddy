@@ -3,7 +3,9 @@ import { useAuth } from "./context/AuthContext";
 import Auth from "./components/Auth";
 import Sidebar from "./components/Sidebar";
 import Dashboard from "./components/Dashboard";
-import Investments from "./components/Investments";
+
+import Portfolio from "./components/Portfolio";
+import MarketExplorer from "./components/MarketExplorer";
 import Wallet from "./components/Wallet";
 import Analytics from "./components/Analytics";
 import Goals from "./components/Goals";
@@ -38,8 +40,11 @@ function App() {
         return <Dashboard />;
       case 'AI Coach':
         return <AICoachPage />;
-      case 'Investments':
-        return <Investments />;
+
+      case 'Portfolio':
+        return <Portfolio />;
+      case 'Market Explorer':
+        return <MarketExplorer />;
       case 'Wallet':
         return <Wallet />;
       case 'Analytics':

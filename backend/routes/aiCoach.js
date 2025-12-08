@@ -4,6 +4,9 @@ import {
   analyzeSpending,
   getGoalCoaching,
   chat,
+  getChatHistory,
+  getChatSession,
+  deleteChatSession,
   executeCreateGoal,
   executeAddTransaction,
   executeUpdateGoal,
@@ -13,14 +16,22 @@ import { protect } from '../middleware/auth.js';
 const router = express.Router();
 
 // All routes are protected
-router.get('/insights', protect, getInsights);
-router.get('/analyze/:category?', protect, analyzeSpending);
-router.get('/goal/:goalId', protect, getGoalCoaching);
-router.post('/chat', protect, chat);
+router.use(protect);
+
+// AI Coach routes
+router.get('/insights', getInsights);
+router.get('/analyze/:category?', analyzeSpending);
+router.get('/goal/:goalId', getGoalCoaching);
+router.post('/chat', chat);
+
+// Chat history routes
+router.get('/history', getChatHistory);
+router.get('/history/:sessionId', getChatSession);
+router.delete('/history/:sessionId', deleteChatSession);
 
 // Action execution routes
-router.post('/action/create-goal', protect, executeCreateGoal);
-router.post('/action/add-transaction', protect, executeAddTransaction);
-router.post('/action/update-goal', protect, executeUpdateGoal);
+router.post('/action/create-goal', executeCreateGoal);
+router.post('/action/add-transaction', executeAddTransaction);
+router.post('/action/update-goal', executeUpdateGoal);
 
 export default router;

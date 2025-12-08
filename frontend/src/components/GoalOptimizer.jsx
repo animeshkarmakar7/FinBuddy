@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Sparkles, TrendingUp, TrendingDown, AlertCircle, Target, Calendar, DollarSign, Zap, CheckCircle, X, Info } from 'lucide-react';
+import { Sparkles, TrendingUp, TrendingDown, AlertCircle, Target, Calendar, Zap, CheckCircle, X, Info } from 'lucide-react';
+import IndianRupee from './icons/IndianRupee';
 import { goalAPI } from '../services/goalService';
 
 const GoalOptimizer = ({ goalId, onClose }) => {
@@ -289,7 +290,7 @@ const GoalOptimizer = ({ goalId, onClose }) => {
                     ) : patterns.trend.direction === 'decreasing' ? (
                       <TrendingDown className="w-5 h-5 text-green-600" />
                     ) : (
-                      <DollarSign className="w-5 h-5 text-blue-600" />
+                      <IndianRupee className="w-5 h-5 text-blue-600" />
                     )}
                     <span className="font-semibold text-gray-800">Spending Trend: {patterns.trend.direction}</span>
                   </div>

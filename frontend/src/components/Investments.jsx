@@ -3,7 +3,6 @@ import { transactionAPI } from '../services/api';
 import AddTransactionModal from './AddTransactionModal';
 import {
   TrendingUp,
-  DollarSign,
   ArrowUpRight,
   Plus,
   Loader,
@@ -12,6 +11,7 @@ import {
   BarChart3,
   Briefcase,
 } from 'lucide-react';
+import IndianRupee from './icons/IndianRupee';
 import {
   AreaChart,
   Area,
@@ -138,7 +138,7 @@ const Investments = () => {
             <div className="md:col-span-2 bg-gradient-to-br from-blue-500 via-violet-500 to-purple-600 rounded-2xl p-6 text-white shadow-xl hover:shadow-2xl transition-all duration-300 animate-slide-up">
               <div className="flex items-center justify-between mb-4">
                 <div className="p-3 bg-white/20 backdrop-blur-sm rounded-xl">
-                  <DollarSign className="w-6 h-6" />
+                  <IndianRupee className="w-6 h-6" />
                 </div>
                 <div className="flex items-center gap-2 bg-white/20 backdrop-blur-sm px-3 py-1.5 rounded-lg">
                   <ArrowUpRight className="w-4 h-4" />

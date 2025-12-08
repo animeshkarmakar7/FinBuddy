@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Target, Plus, TrendingUp, Calendar, DollarSign, AlertCircle } from 'lucide-react';
+import { Target, Plus, TrendingUp, Calendar, AlertCircle } from 'lucide-react';
+import IndianRupee from './icons/IndianRupee';
 import { useGoals } from '../hooks/useGoals';
 import CreateGoalModal from './CreateGoalModal';
 import GoalCard from './GoalCard';
@@ -95,7 +96,7 @@ const Goals = () => {
               </p>
             </div>
             <div className="w-14 h-14 bg-purple-100 rounded-full flex items-center justify-center">
-              <DollarSign className="w-7 h-7 text-purple-600" />
+              <IndianRupee className="w-7 h-7 text-purple-600" />
             </div>
           </div>
         </div>

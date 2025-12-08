@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import IndianRupee from './icons/IndianRupee';
 import { transactionAPI, paymentMethodAPI } from '../services/api';
 import AddTransactionModal from './AddTransactionModal';
 import AddPaymentMethodModal from './AddPaymentMethodModal';
@@ -23,7 +24,7 @@ import {
   Car,
   Smartphone,
   Utensils,
-  DollarSign,
+
   TrendingUp,
   TrendingDown,
 } from 'lucide-react';
@@ -137,11 +138,11 @@ const Wallet = () => {
       Car,
       Smartphone,
       Utensils,
-      DollarSign,
+      IndianRupee,
       TrendingUp,
       TrendingDown,
     };
-    return icons[iconName] || DollarSign;
+    return icons[iconName] || IndianRupee;
   };
 
   const filteredTransactions = transactions.filter((transaction) => {

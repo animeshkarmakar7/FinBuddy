@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
+import IndianRupee from './icons/IndianRupee';
 import { transactionAPI } from '../services/api';
 import {
   TrendingUp,
   TrendingDown,
-  DollarSign,
+
   Download,
   Loader,
   AlertCircle,
@@ -78,9 +79,9 @@ const Analytics = () => {
       Utensils,
       Heart,
       Zap,
-      DollarSign,
+      IndianRupee,
     };
-    return icons[iconName] || DollarSign;
+    return icons[iconName] || IndianRupee;
   };
 
   // Calculate financial overview
@@ -168,7 +169,7 @@ const Analytics = () => {
       value: `$${financialOverview.netSavings.toLocaleString()}`,
       change: `${savingsTrend >= 0 ? '+' : ''}${savingsTrend}%`,
       trend: savingsTrend >= 0 ? 'up' : 'down',
-      icon: DollarSign,
+      icon: IndianRupee,
       color: 'from-blue-500 to-cyan-500'
     },
     {
@@ -198,7 +199,7 @@ const Analytics = () => {
         .filter(([_, data]) => data.type === 'expense')
         .map(([category, data], index) => {
           const colors = ['#3b82f6', '#8b5cf6', '#06b6d4', '#ec4899', '#f59e0b', '#10b981', '#a855f7', '#6b7280'];
-          const icons = [Home, Car, Utensils, ShoppingBag, Coffee, Heart, Zap, DollarSign];
+          const icons = [Home, Car, Utensils, ShoppingBag, Coffee, Heart, Zap, IndianRupee];
           return {
             category,
             amount: data.total,

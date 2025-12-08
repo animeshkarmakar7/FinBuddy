@@ -78,8 +78,11 @@ export const useAIChat = () => {
       // Get AI response
       const response = await aiCoachAPI.chat(userMessage, messages);
       
+      // Extract AI response content (handle different response formats)
+      const aiContent = response.data.response || response.data.message || 'No response';
+      
       // Add AI response to chat
-      const aiMessage = { role: 'model', content: response.data.message };
+      const aiMessage = { role: 'assistant', content: aiContent };
       setMessages(prev => [...prev, aiMessage]);
       
       // Set suggested action if present
@@ -89,6 +92,7 @@ export const useAIChat = () => {
 
       return response.data;
     } catch (err) {
+      console.error('Failed to send message:', err);
       setError(err.response?.data?.message || 'Failed to send message');
       throw err;
     } finally {

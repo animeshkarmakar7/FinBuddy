@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { X, DollarSign, Calendar, Tag, FileText, CreditCard, Sparkles, Check } from 'lucide-react';
+import { X, Calendar, Tag, FileText, CreditCard, Sparkles, Check } from 'lucide-react';
+import IndianRupee from './icons/IndianRupee';
 import { transactionAPI } from '../services/api';
 import { useAICategorization } from '../hooks/useAICategorization';
 
@@ -58,7 +59,7 @@ const AddTransactionModal = ({ isOpen, onClose, onSuccess, type = 'expense' }) =
     'Utilities': 'Home',
     'Entertainment': 'Coffee',
     'Healthcare': 'Heart',
-    'Salary': 'DollarSign',
+    'Salary': 'IndianRupee',
     'Freelance': 'Briefcase',
     'Investment': 'TrendingUp',
     'Stocks': 'TrendingUp',
@@ -98,7 +99,7 @@ const AddTransactionModal = ({ isOpen, onClose, onSuccess, type = 'expense' }) =
       const transactionData = {
         ...formData,
         amount: parseFloat(formData.amount),
-        icon: iconMap[formData.category] || 'DollarSign',
+        icon: iconMap[formData.category] || 'IndianRupee',
         color: colorMap[formData.type],
         time: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
       };
@@ -277,7 +278,7 @@ const AddTransactionModal = ({ isOpen, onClose, onSuccess, type = 'expense' }) =
           {/* Amount */}
           <div>
             <label className="block text-sm font-medium text-violet-700 mb-2">
-              <DollarSign className="w-4 h-4 inline mr-2" />
+              <IndianRupee className="w-4 h-4 inline mr-2" />
               Amount *
             </label>
             <input

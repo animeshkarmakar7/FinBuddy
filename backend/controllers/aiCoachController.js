@@ -59,12 +59,12 @@ export const getGoalCoaching = async (req, res) => {
   }
 };
 
-// @desc    Chat with AI coach
+// @desc    Chat with AI coach (enhanced with context and history)
 // @route   POST /api/ai-coach/chat
 // @access  Private
 export const chat = async (req, res) => {
   try {
-    const { message, history } = req.body;
+    const { message, sessionId } = req.body;
     
     if (!message) {
       return res.status(400).json({
@@ -73,17 +73,182 @@ export const chat = async (req, res) => {
       });
     }
 
+    // Import services
+    const ChatHistory = (await import('../models/ChatHistory.js')).default;
+    const portfolioContextService = (await import('../services/portfolioContextService.js')).default;
+    const marketContextService = (await import('../services/marketContextService.js')).default;
+    
+    // Generate session ID if not provided
+    const currentSessionId = sessionId || `session_${Date.now()}_${req.user.id}`;
+    
+    // Get or create chat history
+    let chatHistory = await ChatHistory.findOne({ 
+      userId: req.user.id,
+      sessionId: currentSessionId 
+    });
+    
+    if (!chatHistory) {
+      chatHistory = new ChatHistory({
+        userId: req.user.id,
+        sessionId: currentSessionId,
+        messages: []
+      });
+    }
+    
+    // Get portfolio context
+    const portfolioContext = await portfolioContextService.getPortfolioContext(req.user.id);
+    
+    // Get market context
+    const marketContext = await marketContextService.getMarketContext();
+    
+    // Build conversation history for AI
+    const conversationHistory = chatHistory.messages.map(msg => ({
+      role: msg.role,
+      content: msg.content
+    }));
+    
+    // Call AI with conversation history only (Groq service doesn't use context params)
     const response = await getService().chat(
       req.user.id,
       message,
-      history || []
+      conversationHistory
     );
     
-    res.status(200).json(response);
+    // Extract response content - Groq service returns 'message' property
+    const aiResponse = response.message || response.response || 'No response generated';
+    
+    // Save user message
+    chatHistory.messages.push({
+      role: 'user',
+      content: message,
+      timestamp: new Date(),
+      contextSnapshot: {
+        portfolioValue: portfolioContext.totalValue || 0,
+        pnl: portfolioContext.pnlPercentage || 0
+      }
+    });
+    
+    // Save assistant response
+    chatHistory.messages.push({
+      role: 'assistant',
+      content: aiResponse,
+      timestamp: new Date()
+    });
+    
+    await chatHistory.save();
+    
+    res.status(200).json({
+      success: true,
+      response: aiResponse,
+      sessionId: currentSessionId,
+      context: {
+        hasPortfolio: portfolioContext.hasPortfolio || false,
+        portfolioValue: portfolioContext.totalValue || 0,
+        pnl: portfolioContext.pnlPercentage || 0
+      }
+    });
   } catch (error) {
+    console.error('Chat error:', error);
     res.status(500).json({
       success: false,
       message: error.message,
+    });
+  }
+};
+
+// @desc    Get chat history
+// @route   GET /api/ai-coach/history
+// @access  Private
+export const getChatHistory = async (req, res) => {
+  try {
+    const ChatHistory = (await import('../models/ChatHistory.js')).default;
+    
+    const sessions = await ChatHistory.find({ userId: req.user.id })
+      .sort({ updatedAt: -1 })
+      .limit(20)
+      .select('sessionId messages createdAt updatedAt');
+    
+    // Format sessions with titles
+    const formattedSessions = sessions.map(session => ({
+      sessionId: session.sessionId,
+      title: session.messages[0]?.content.substring(0, 50) + '...' || 'New Chat',
+      messageCount: session.messages.length,
+      lastMessage: session.messages[session.messages.length - 1]?.content.substring(0, 100),
+      createdAt: session.createdAt,
+      updatedAt: session.updatedAt
+    }));
+    
+    res.status(200).json({
+      success: true,
+      sessions: formattedSessions
+    });
+  } catch (error) {
+    console.error('Get history error:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+};
+
+// @desc    Get specific chat session
+// @route   GET /api/ai-coach/history/:sessionId
+// @access  Private
+export const getChatSession = async (req, res) => {
+  try {
+    const ChatHistory = (await import('../models/ChatHistory.js')).default;
+    
+    const session = await ChatHistory.findOne({
+      userId: req.user.id,
+      sessionId: req.params.sessionId
+    });
+    
+    if (!session) {
+      return res.status(404).json({
+        success: false,
+        message: 'Session not found'
+      });
+    }
+    
+    res.status(200).json({
+      success: true,
+      session: {
+        sessionId: session.sessionId,
+        messages: session.messages,
+        createdAt: session.createdAt,
+        updatedAt: session.updatedAt
+      }
+    });
+  } catch (error) {
+    console.error('Get session error:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+};
+
+// @desc    Delete chat session
+// @route   DELETE /api/ai-coach/history/:sessionId
+// @access  Private
+export const deleteChatSession = async (req, res) => {
+  try {
+    const ChatHistory = (await import('../models/ChatHistory.js')).default;
+    
+    await ChatHistory.deleteOne({
+      userId: req.user.id,
+      sessionId: req.params.sessionId
+    });
+    
+    res.status(200).json({
+      success: true,
+      message: 'Session deleted successfully'
+    });
+  } catch (error) {
+    console.error('Delete session error:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message
     });
   }
 };

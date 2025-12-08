@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Target, Calendar, DollarSign, TrendingUp, Plus, Trash2, Sparkles } from 'lucide-react';
+import { Target, Calendar, TrendingUp, Plus, Trash2, Sparkles } from 'lucide-react';
+import IndianRupee from './icons/IndianRupee';
 import GoalOptimizer from './GoalOptimizer';
 
 const GoalCard = ({ goal, onDelete, onAddContribution }) => {

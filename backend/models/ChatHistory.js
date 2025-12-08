@@ -28,8 +28,7 @@ const chatHistorySchema = new mongoose.Schema({
   },
   sessionId: {
     type: String,
-    required: true,
-    index: true,
+    required: true
   },
   messages: [chatMessageSchema],
   createdAt: {
@@ -50,7 +49,7 @@ chatHistorySchema.pre('save', function(next) {
 
 // Index for fast queries
 chatHistorySchema.index({ userId: 1, createdAt: -1 });
-chatHistorySchema.index({ sessionId: 1 });
+chatHistorySchema.index({ userId: 1, sessionId: 1 }, { unique: true });
 
 const ChatHistory = mongoose.model('ChatHistory', chatHistorySchema);
 

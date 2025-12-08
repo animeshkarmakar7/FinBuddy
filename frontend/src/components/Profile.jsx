@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import IndianRupee from './icons/IndianRupee';
 import { useAuth } from '../context/AuthContext';
 import { transactionAPI } from '../services/api';
 import {
@@ -12,7 +13,7 @@ import {
   Edit,
   Save,
   X,
-  DollarSign,
+
   TrendingUp,
   Target,
   Award,
@@ -155,7 +156,7 @@ const Profile = () => {
       title: 'Total Worth',
       value: `$${(stats?.netWorth || 0).toLocaleString()}`,
       change: 'Net Worth',
-      icon: DollarSign,
+      icon: IndianRupee,
       color: 'from-blue-500 to-cyan-500'
     },
     {

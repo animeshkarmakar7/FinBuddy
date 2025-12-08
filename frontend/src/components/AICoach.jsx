@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { MessageCircle, Send, Sparkles, X, TrendingUp, DollarSign, Target, Loader } from 'lucide-react';
+import { MessageCircle, Send, Sparkles, X, TrendingUp, Target, Loader } from 'lucide-react';
+import IndianRupee from './icons/IndianRupee';
 import { useAIChat, useAICoach } from '../hooks/useAICoach';
 import ActionButton from './ActionButton';
 
@@ -136,7 +137,7 @@ const AICoach = ({ onClose, isFullPage = false }) => {
                       : 'bg-gray-100 text-gray-800'
                   }`}
                 >
-                  {msg.role === 'model' && (
+                  {msg.role === 'assistant' && (
                     <div className="flex items-center gap-2 mb-2">
                       <Sparkles className="w-4 h-4 text-violet-600" />
                       <span className="text-xs font-semibold text-violet-600">AI Coach</span>

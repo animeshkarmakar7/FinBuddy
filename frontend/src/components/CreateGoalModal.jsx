@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { X, Target, DollarSign, Calendar, Tag, FileText } from 'lucide-react';
+import { X, Target, Calendar, Tag, FileText } from 'lucide-react';
+import IndianRupee from './icons/IndianRupee';
 
 const CreateGoalModal = ({ isOpen, onClose, onSubmit }) => {
   const [formData, setFormData] = useState({
@@ -142,7 +143,7 @@ const CreateGoalModal = ({ isOpen, onClose, onSubmit }) => {
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-violet-700 mb-2">
-                <DollarSign className="w-4 h-4 inline mr-2" />
+                <IndianRupee className="w-4 h-4 inline mr-2" />
                 Target Amount *
               </label>
               <input
@@ -160,7 +161,7 @@ const CreateGoalModal = ({ isOpen, onClose, onSubmit }) => {
 
             <div>
               <label className="block text-sm font-medium text-violet-700 mb-2">
-                <DollarSign className="w-4 h-4 inline mr-2" />
+                <IndianRupee className="w-4 h-4 inline mr-2" />
                 Current Savings
               </label>
               <input

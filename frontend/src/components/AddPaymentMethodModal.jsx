@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { X, CreditCard, Wallet, DollarSign } from 'lucide-react';
+import { X, CreditCard, Wallet } from 'lucide-react';
+import IndianRupee from './icons/IndianRupee';
 import { paymentMethodAPI } from '../services/api';
 
 const AddPaymentMethodModal = ({ isOpen, onClose, onSuccess }) => {
@@ -161,7 +162,7 @@ const AddPaymentMethodModal = ({ isOpen, onClose, onSuccess }) => {
           {/* Balance */}
           <div>
             <label className="block text-sm font-medium text-violet-700 mb-2">
-              <DollarSign className="w-4 h-4 inline mr-2" />
+              <IndianRupee className="w-4 h-4 inline mr-2" />
               Current Balance
             </label>
             <input

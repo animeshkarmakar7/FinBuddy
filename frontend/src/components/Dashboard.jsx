@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { transactionAPI } from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import { useInvestments } from '../hooks/useInvestments';
 import AddTransactionModal from './AddTransactionModal';
 import AICoach from './AICoach';
+import IndianRupee from './icons/IndianRupee';
 import {
   TrendingUp,
   TrendingDown,
-  Wallet,
   DollarSign,
+  Wallet,
   ArrowUpRight,
   ArrowDownRight,
   Clock,
@@ -49,6 +51,9 @@ const Dashboard = () => {
   // Real data state
   const [stats, setStats] = useState(null);
   const [transactions, setTransactions] = useState([]);
+  
+  // Portfolio investments data
+  const { investments, loading: investmentsLoading } = useInvestments();
 
   useEffect(() => {
     fetchDashboardData();
@@ -73,6 +78,26 @@ const Dashboard = () => {
       setLoading(false);
     }
   };
+  
+  // Calculate portfolio stats from investments
+  const portfolioStats = React.useMemo(() => {
+    if (!investments || investments.length === 0) {
+      return { totalValue: 0, totalInvested: 0, totalPnL: 0, pnlPercentage: 0 };
+    }
+    
+    const totalValue = investments.reduce((sum, inv) => 
+      sum + (inv.quantity * inv.currentPrice), 0
+    );
+    
+    const totalInvested = investments.reduce((sum, inv) => 
+      sum + inv.totalInvested, 0
+    );
+    
+    const totalPnL = totalValue - totalInvested;
+    const pnlPercentage = totalInvested > 0 ? ((totalPnL / totalInvested) * 100).toFixed(2) : 0;
+    
+    return { totalValue, totalInvested, totalPnL, pnlPercentage };
+  }, [investments]);
 
   const getIconComponent = (iconName) => {
     const icons = {
@@ -89,16 +114,34 @@ const Dashboard = () => {
     return icons[iconName] || DollarSign;
   };
 
-  // Calculate portfolio distribution from stats
-  const portfolioData = stats?.byCategory
-    ? Object.entries(stats.byCategory)
-        .filter(([_, data]) => data.type === 'investment')
-        .map(([category, data], index) => ({
-          name: category,
-          value: data.total,
-          color: ['#3b82f6', '#8b5cf6', '#06b6d4', '#a855f7', '#ec4899'][index % 5],
-        }))
-    : [];
+  // Calculate portfolio distribution from actual Portfolio investments
+  const portfolioData = React.useMemo(() => {
+    if (!investments || investments.length === 0) return [];
+    
+    // Group investments by type
+    const allocation = {};
+    investments.forEach(inv => {
+      const type = inv.type || 'Other';
+      const value = inv.quantity * inv.currentPrice;
+      allocation[type] = (allocation[type] || 0) + value;
+    });
+    
+    // Convert to array format for pie chart
+    const colors = {
+      'stock': '#3b82f6',
+      'crypto': '#f59e0b',
+      'fd': '#10b981',
+      'gold': '#eab308',
+      'bond': '#8b5cf6',
+      'Other': '#6b7280'
+    };
+    
+    return Object.entries(allocation).map(([type, value]) => ({
+      name: type.charAt(0).toUpperCase() + type.slice(1),
+      value: value,
+      color: colors[type] || colors['Other']
+    }));
+  }, [investments]);
 
   // Calculate monthly trend from stats
   const trendData = stats?.byMonth
@@ -156,18 +199,18 @@ const Dashboard = () => {
       trend: calculateNetWorthTrend() >= 0 ? 'up' : 'down'
     },
     {
-      title: 'Investments',
-      amount: stats?.totalInvestment || 0,
-      change: Math.abs(calculateTrendPercentage(stats?.totalInvestment, 'investment')),
+      title: 'Portfolio Value',
+      amount: portfolioStats.totalValue,
+      change: Math.abs(portfolioStats.pnlPercentage),
       icon: TrendingUp,
       gradient: 'from-violet-500 via-purple-500 to-pink-600',
-      trend: calculateTrendPercentage(stats?.totalInvestment, 'investment') >= 0 ? 'up' : 'down'
+      trend: portfolioStats.pnlPercentage >= 0 ? 'up' : 'down'
     },
     {
       title: 'Total Income',
       amount: stats?.totalIncome || 0,
       change: Math.abs(calculateTrendPercentage(stats?.totalIncome, 'income')),
-      icon: DollarSign,
+      icon: IndianRupee,
       gradient: 'from-emerald-500 via-teal-500 to-cyan-600',
       trend: calculateTrendPercentage(stats?.totalIncome, 'income') >= 0 ? 'up' : 'down'
     },
@@ -286,7 +329,7 @@ const Dashboard = () => {
 
                     <p className="text-white/80 text-sm mb-2">{card.title}</p>
                     <h3 className="text-3xl font-bold mb-3">
-                      {balanceVisible ? `$${card.amount.toLocaleString()}` : '••••••'}
+                      {balanceVisible ? `₹${card.amount.toLocaleString('en-IN')}` : '••••••'}
                     </h3>
 
                     <div className="flex items-center gap-2">
