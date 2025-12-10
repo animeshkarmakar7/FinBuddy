@@ -1,0 +1,15 @@
+# Railway Deployment Configuration
+
+# This file is used by Railway to detect and configure your services
+# Railway will automatically detect your docker-compose.yml and deploy each service
+
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "Dockerfile"
+
+[deploy]
+startCommand = ""
+healthcheckPath = "/api/health"
+healthcheckTimeout = 100
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 10

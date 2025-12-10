@@ -3,7 +3,7 @@ import { io } from 'socket.io-client';
 import investmentAPI from '../services/investmentService';
 
 // WebSocket needs base URL without /api path
-const SOCKET_URL = 'http://localhost:5000';
+const SOCKET_URL = import.meta.env.VITE_WS_URL || 'http://localhost:5000';
 
 /**
  * Hook for real-time price updates via WebSocket

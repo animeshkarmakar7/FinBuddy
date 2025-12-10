@@ -56,6 +56,9 @@ const corsOptions = {
     
     if (allowedOrigins.indexOf(origin) !== -1) {
       callback(null, true);
+    } else if (origin && (origin.includes('.railway.app') || origin.includes('.onrender.com'))) {
+      // Allow production domains from Railway or Render
+      callback(null, true);
     } else {
       callback(new Error('Not allowed by CORS'));
     }
@@ -143,7 +146,14 @@ const httpServer = createServer(app);
 // Setup Socket.IO
 const io = new Server(httpServer, {
   cors: {
-    origin: process.env.CLIENT_URL || 'http://localhost:5173',
+    origin: function (origin, callback) {
+      if (!origin) return callback(null, true);
+      if (allowedOrigins.indexOf(origin) !== -1) return callback(null, true);
+      if (origin && (origin.includes('.railway.app') || origin.includes('.onrender.com'))) {
+        return callback(null, true);
+      }
+      callback(new Error('Not allowed by CORS'));
+    },
     methods: ['GET', 'POST'],
     credentials: true
   }
