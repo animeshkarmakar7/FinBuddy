@@ -10,7 +10,6 @@ import Wallet from "./components/Wallet";
 import Analytics from "./components/Analytics";
 import Goals from "./components/Goals";
 import Profile from "./components/Profile";
-import Settings from "./components/Settings";
 import AICoachPage from "./components/AICoachPage";
 
 function App() {
@@ -53,8 +52,6 @@ function App() {
         return <Goals />;
       case 'Profile':
         return <Profile />;
-      case 'Settings':
-        return <Settings />;
       default:
         return <Dashboard />;
     }

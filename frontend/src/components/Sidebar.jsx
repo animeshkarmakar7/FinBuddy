@@ -5,7 +5,6 @@ import {
   TrendingUp, 
   Wallet, 
   PieChart, 
-  Settings, 
   User,
   Target,
   ChevronLeft,
@@ -31,7 +30,6 @@ const Sidebar = ({ activeSection, setActiveSection }) => {
     { name: 'Analytics', icon: PieChart },
     { name: 'Goals', icon: Target },
     { name: 'Profile', icon: User },
-    { name: 'Settings', icon: Settings },
   ];
 
   const handleLogout = async () => {

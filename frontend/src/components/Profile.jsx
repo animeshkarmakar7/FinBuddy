@@ -22,10 +22,11 @@ import {
   Lock,
   Eye,
   EyeOff,
+  LogOut,
 } from 'lucide-react';
 
 const Profile = () => {
-  const { user, updateUserProfile, updatePassword } = useAuth();
+  const { user, updateUserProfile, updatePassword, logout } = useAuth();
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [isChangingPassword, setIsChangingPassword] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -174,14 +175,6 @@ const Profile = () => {
       change: 'All Time',
       icon: Target,
       color: 'from-emerald-500 to-teal-500'
-    },
-    {
-      id: 4,
-      title: 'Member Level',
-      value: user?.role === 'admin' ? 'Admin' : 'User',
-      change: user?.isEmailVerified ? 'Verified' : 'Unverified',
-      icon: Award,
-      color: 'from-amber-500 to-orange-500'
     }
   ];
 
@@ -473,6 +466,30 @@ const Profile = () => {
                 </button>
               </form>
             )}
+          </div>
+
+          {/* Sign Out Section */}
+          <div className="bg-rose-50 border-2 border-rose-200 rounded-2xl p-6 mb-8">
+            <div className="flex items-start gap-4">
+              <AlertCircle className="w-6 h-6 text-rose-600 flex-shrink-0 mt-1" />
+              <div className="flex-1">
+                <h3 className="text-lg font-bold text-rose-800 mb-2">Sign Out</h3>
+                <p className="text-sm text-rose-600/80 mb-4">
+                  Sign out of your account. You'll need to log in again to access your data.
+                </p>
+                <button 
+                  onClick={() => {
+                    if (window.confirm('Are you sure you want to sign out?')) {
+                      logout();
+                    }
+                  }}
+                  className="flex items-center gap-2 px-6 py-3 bg-rose-600 text-white rounded-xl hover:bg-rose-700 transition-all duration-300 font-semibold shadow-lg hover:shadow-xl hover:scale-105"
+                >
+                  <LogOut className="w-5 h-5" />
+                  Sign Out
+                </button>
+              </div>
+            </div>
           </div>
 
           {/* Recent Activity */}

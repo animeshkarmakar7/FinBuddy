@@ -1,0 +1,82 @@
+version: '3.8'
+
+services:
+  # Backend Service (Node.js/Express)
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: finbuddy-backend
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    environment:
+      - NODE_ENV=production
+      - PORT=5000
+      - MONGODB_URI=${MONGODB_URI}
+      - JWT_SECRET=${JWT_SECRET}
+      - JWT_EXPIRE=${JWT_EXPIRE:-7d}
+      - CLIENT_URL=http://localhost:5173
+      - GROQ_API_KEY=${GROQ_API_KEY}
+      - FORECASTING_SERVICE_URL=http://forecasting-service:5001
+    depends_on:
+      - forecasting-service
+    networks:
+      - finbuddy-network
+    healthcheck:
+      test: [ "CMD", "node", "-e", "require('http').get('http://localhost:5000/api/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Frontend Service (React/Vite with Nginx)
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        - VITE_API_URL=http://localhost:5000
+        - VITE_WS_URL=http://localhost:5000
+    container_name: finbuddy-frontend
+    restart: unless-stopped
+    ports:
+      - "5173:80"
+    depends_on:
+      - backend
+    networks:
+      - finbuddy-network
+    healthcheck:
+      test: [ "CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:80/health" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  # Forecasting Service (Python/Flask)
+  forecasting-service:
+    build:
+      context: ./forecasting-service
+      dockerfile: Dockerfile
+    container_name: finbuddy-forecasting
+    restart: unless-stopped
+    ports:
+      - "5001:5001"
+    environment:
+      - PORT=5001
+      - FLASK_ENV=production
+      - CLIENT_URL=http://localhost:5173
+    networks:
+      - finbuddy-network
+    healthcheck:
+      test: [ "CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:5001/health').read()" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+networks:
+  finbuddy-network:
+    driver: bridge
+
+# Note: MongoDB is hosted on MongoDB Atlas, not containerized
